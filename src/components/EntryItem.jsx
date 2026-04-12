@@ -90,7 +90,6 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
   const status           = STATUS[allocationStatus] || STATUS.new;
   const displayContent   = entry.text_content ?? entry.content ?? "";
   const typeLabel        = typeLabels[entry.type] || entry.type;
-  const summaryText      = (entry.title && entry.title.trim()) ? entry.title : displayContent;
 
   // Classification chip text
   const classificationParts = [];
