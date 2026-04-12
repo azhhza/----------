@@ -56,7 +56,7 @@ function buildTextContent(title, content) {
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
-export default function EntryItem({ entry, onDelete, isArchiveView = false, onRestore }) {
+export default function EntryItem({ entry, onDelete, isArchiveView = false, onRestore, isMobile = false }) {
   const updateEntry           = useStore((s) => s.updateEntry);
   const allocateBlock         = useStore((s) => s.allocateBlock);
   const addPtkit              = useStore((s) => s.addPtkit);
@@ -205,8 +205,8 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
     <>
       <div style={{
         background:   "white",
-        borderRadius: "14px",
-        marginBottom: "10px",
+        borderRadius: isMobile ? "16px" : "14px",
+        marginBottom: isMobile ? "12px" : "10px",
         boxShadow:    "0 1px 4px rgba(0,0,0,0.06)",
         border:       "1px solid #E7E5E4",
         borderRight:  `4px solid ${status.borderColor}`,
@@ -218,8 +218,8 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
         <div
           onClick={!isEditing ? handleToggleExpanded : undefined}
           style={{
-            padding: "14px 16px 0",
-            cursor: isEditing ? "default" : "pointer",
+            padding: isMobile ? "16px 16px 0" : "14px 16px 0",
+            cursor:  isEditing ? "default" : "pointer",
           }}
         >
           {/* Action buttons row (visible when expanded) */}
@@ -291,10 +291,10 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
                 </div>
               )}
               <div style={{
-                fontSize:   "15px",
+                fontSize:   isMobile ? "16px" : "15px",
                 fontWeight: 600,
                 color:      "#1C1917",
-                lineHeight: "1.5",
+                lineHeight: "1.55",
                 whiteSpace: "pre-wrap",
                 ...(isExpanded ? {} : {
                   display:            "-webkit-box",
