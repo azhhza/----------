@@ -6,123 +6,159 @@ import PtkiyotSection from "./PtkiyotSection";
 import LinksSection from "./LinksSection";
 
 const typeLabels = {
-  note: "פתק",
-  task: "משימה",
-  finance: "תנועה כספית",
+  note:     "פתק",
+  task:     "משימה",
+  finance:  "תנועה כספית",
   reminder: "תזכורת",
-  idea: "רעיון",
+  idea:     "רעיון",
   activity: "פעילות",
 };
 
-const blockTypeLabels = {
-  income: "הכנסה",
-  expense: "הוצאה",
-  note: "הערה",
+const blockTypeLabels   = { income: "הכנסה", expense: "הוצאה", note: "הערה" };
+const financialKindLabels = { business: "עסקי", private: "פרטי", project: "פרויקט" };
+
+// ─── Status design tokens ────────────────────────────────────────────────────
+const STATUS = {
+  new: {
+    borderColor: "#F97316",
+    chipBg:      "#FFF7ED",
+    chipBorder:  "#FED7AA",
+    chipColor:   "#C2410C",
+    actionText:  "סדר בלוק",
+  },
+  partial: {
+    borderColor: "#FBBF24",
+    chipBg:      "#FFFBEB",
+    chipBorder:  "#FDE68A",
+    chipColor:   "#92400E",
+    actionText:  "השלם פרטים",
+  },
+  sorted: {
+    borderColor: "#D1D5DB",
+    chipBg:      "#F9FAFB",
+    chipBorder:  "#E5E7EB",
+    chipColor:   "#6B7280",
+    actionText:  "ערוך סיווג",
+  },
 };
 
-const financialKindLabels = {
-  business: "עסקי",
-  private: "פרטי",
-  project: "פרויקט",
-};
-
-function formatAmountForDisplay(value) {
+function formatAmount(value) {
   if (value === null || value === undefined || value === "") return "";
-  const numericValue = Number(value);
-  if (Number.isNaN(numericValue)) return "";
-  return `₪${numericValue}`;
+  const n = Number(value);
+  return Number.isNaN(n) ? "" : `₪${n.toLocaleString()}`;
 }
 
 function buildTextContent(title, content) {
-  const safeTitle = (title || "").trim();
-  const safeContent = (content || "").trim();
-
-  if (safeTitle && safeContent) {
-    return `${safeTitle}\n${safeContent}`;
-  }
-
-  if (safeTitle) return safeTitle;
-  return safeContent;
+  const t = (title   || "").trim();
+  const c = (content || "").trim();
+  if (t && c) return `${t}\n${c}`;
+  return t || c;
 }
 
-export default function EntryItem({
-  entry,
-  onDelete,
-  isArchiveView = false,
-  onRestore,
-}) {
-  const updateEntry = useStore((state) => state.updateEntry);
-  const allocateBlock = useStore((state) => state.allocateBlock);
-  const addPtkit = useStore((state) => state.addPtkit);
-  const addLinkedEntry = useStore((state) => state.addLinkedEntry);
-  const removeLinkedEntry = useStore((state) => state.removeLinkedEntry);
-  const togglePinnedLinkedEntry = useStore((state) => state.togglePinnedLinkedEntry);
-  const entries = useStore((state) => state.entries);
+// ─── Component ───────────────────────────────────────────────────────────────
+export default function EntryItem({ entry, onDelete, isArchiveView = false, onRestore }) {
+  const updateEntry           = useStore((s) => s.updateEntry);
+  const allocateBlock         = useStore((s) => s.allocateBlock);
+  const addPtkit              = useStore((s) => s.addPtkit);
+  const addLinkedEntry        = useStore((s) => s.addLinkedEntry);
+  const removeLinkedEntry     = useStore((s) => s.removeLinkedEntry);
+  const togglePinnedLinkedEntry = useStore((s) => s.togglePinnedLinkedEntry);
+  const entries               = useStore((s) => s.entries);
 
-  const initialContent = entry.text_content ?? entry.content ?? "";
-  const initialBlockType = entry.block_type || "note";
-  const initialAmount =
-    entry.amount === null || entry.amount === undefined ? "" : String(entry.amount);
-  const initialFinancialKind = entry.financial_kind || "business";
-  const initialProjectLabel = entry.project_label || "";
+  // ── Edit state ──
+  const [isExpanded,         setIsExpanded]         = useState(false);
+  const [isEditing,          setIsEditing]          = useState(false);
+  const [editedTitle,        setEditedTitle]        = useState(entry.title || "");
+  const [editedContent,      setEditedContent]      = useState(entry.text_content ?? entry.content ?? "");
+  const [editedBlockType,    setEditedBlockType]    = useState(entry.block_type || "note");
+  const [editedAmount,       setEditedAmount]       = useState(
+    entry.amount === null || entry.amount === undefined ? "" : String(entry.amount)
+  );
+  const [editedFinancialKind,setEditedFinancialKind]= useState(entry.financial_kind || "business");
+  const [editedProjectLabel, setEditedProjectLabel] = useState(entry.project_label || "");
 
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedTitle, setEditedTitle] = useState(entry.title || "");
-  const [editedContent, setEditedContent] = useState(initialContent);
-  const [editedBlockType, setEditedBlockType] = useState(initialBlockType);
-  const [editedAmount, setEditedAmount] = useState(initialAmount);
-  const [editedFinancialKind, setEditedFinancialKind] = useState(initialFinancialKind);
-  const [editedProjectLabel, setEditedProjectLabel] = useState(initialProjectLabel);
-  const [isPtkiyotOpen, setIsPtkiyotOpen] = useState(false);
-  const [ptkitInput, setPtkitInput] = useState("");
-  const [isLinksOpen, setIsLinksOpen] = useState(false);
-  const [linkedSearchTerm, setLinkedSearchTerm] = useState("");
-  const [isLinkPickerOpen, setIsLinkPickerOpen] = useState(false);
-  const [peekEntry, setPeekEntry] = useState(null);
+  // ── Sections state ──
+  const [isPtkiyotOpen,   setIsPtkiyotOpen]   = useState(false);
+  const [ptkitInput,      setPtkitInput]      = useState("");
+  const [isLinksOpen,     setIsLinksOpen]     = useState(false);
+  const [linkedSearchTerm,setLinkedSearchTerm]= useState("");
+  const [isLinkPickerOpen,setIsLinkPickerOpen]= useState(false);
+  const [peekEntry,       setPeekEntry]       = useState(null);
 
-  const parseDate = (dateString) => {
-    if (!dateString) return { date: "", time: "" };
+  // ── Derived display values ──
+  const allocationStatus = entry.allocation_status || "new";
+  const status           = STATUS[allocationStatus] || STATUS.new;
+  const displayContent   = entry.text_content ?? entry.content ?? "";
+  const typeLabel        = typeLabels[entry.type] || entry.type;
+  const summaryText      = (entry.title && entry.title.trim()) ? entry.title : displayContent;
 
-    const [datePart, timePart] = dateString.split(" ");
-    if (!datePart) return { date: dateString, time: "" };
+  // Classification chip text
+  const classificationParts = [];
+  const hasFinancialType = entry.block_type === "income" || entry.block_type === "expense";
+  const blockLabel       = blockTypeLabels[entry.block_type];
+  const kindLabel        = financialKindLabels[entry.financial_kind];
+  const amountDisplay    = formatAmount(entry.amount);
 
-    const [year, month, day] = datePart.split("-");
-    if (!year || !month || !day) {
-      return { date: dateString, time: "" };
-    }
+  if (blockLabel) {
+    classificationParts.push(hasFinancialType && kindLabel ? `${blockLabel} ${kindLabel}` : blockLabel);
+  }
+  if (amountDisplay) classificationParts.push(amountDisplay);
+  if (entry.project_label && entry.project_label.trim()) classificationParts.push(entry.project_label.trim());
 
-    return {
-      date: `${day}/${month}/${year}`,
-      time: timePart || "",
-    };
+  const classificationText = classificationParts.join(" · ");
+  const showClassification = classificationText || allocationStatus === "new";
+
+  // Date parsing
+  const parseDate = (s) => {
+    if (!s) return { date: "", time: "" };
+    const [datePart, timePart] = s.split(" ");
+    if (!datePart) return { date: s, time: "" };
+    const [y, m, d] = datePart.split("-");
+    if (!y || !m || !d) return { date: s, time: "" };
+    return { date: `${d}/${m}`, time: timePart || "" };
   };
+  const { date, time } = parseDate(entry.createdAt);
 
+  // ── Linked entries ──
+  const outgoingLinkedEntries = useMemo(() => {
+    return (entry.linkedEntries || [])
+      .map((li) => ({ ...li, targetEntry: entries.find((e) => e.code === li.code) || null }))
+      .filter((li) => li.targetEntry);
+  }, [entry.linkedEntries, entries]);
+
+  const incomingLinkedEntries = useMemo(() => {
+    return entries.filter((e) => {
+      if (e.id === entry.id) return false;
+      return (e.linkedEntries || []).some((li) => li.code === entry.code);
+    });
+  }, [entries, entry.id, entry.code]);
+
+  const availableLinkTargets = useMemo(() => {
+    const linked = new Set((entry.linkedEntries || []).map((li) => li.code));
+    const q = linkedSearchTerm.trim().toLowerCase();
+    return entries.filter((e) => {
+      if (e.id === entry.id || linked.has(e.code)) return false;
+      if (!q) return true;
+      const t = (e.title && e.title.trim()) ? e.title : (e.text_content || e.content || "");
+      return String(e.code).includes(q) || t.toLowerCase().includes(q);
+    });
+  }, [entries, entry.id, entry.linkedEntries, linkedSearchTerm]);
+
+  // ── Handlers ──
   const handleSave = () => {
     if (!editedTitle.trim() && !editedContent.trim()) return;
-
     updateEntry(entry.id, {
-      title: editedTitle,
-      content: editedContent,
+      title:        editedTitle,
+      content:      editedContent,
       text_content: buildTextContent(editedTitle, editedContent),
     });
-
-    const normalizedAmount =
-      editedAmount === "" ? null : Number(editedAmount);
-
+    const n = editedAmount === "" ? null : Number(editedAmount);
     allocateBlock(entry.id, {
-      block_type: editedBlockType,
-      amount:
-        normalizedAmount === null || Number.isNaN(normalizedAmount)
-          ? null
-          : normalizedAmount,
-      financial_kind:
-        editedBlockType === "income" || editedBlockType === "expense"
-          ? editedFinancialKind
-          : null,
+      block_type:    editedBlockType,
+      amount:        (n === null || Number.isNaN(n)) ? null : n,
+      financial_kind:(editedBlockType === "income" || editedBlockType === "expense") ? editedFinancialKind : null,
       project_label: editedProjectLabel.trim(),
     });
-
     setIsEditing(false);
   };
 
@@ -130,9 +166,7 @@ export default function EntryItem({
     setEditedTitle(entry.title || "");
     setEditedContent(entry.text_content ?? entry.content ?? "");
     setEditedBlockType(entry.block_type || "note");
-    setEditedAmount(
-      entry.amount === null || entry.amount === undefined ? "" : String(entry.amount)
-    );
+    setEditedAmount(entry.amount === null || entry.amount === undefined ? "" : String(entry.amount));
     setEditedFinancialKind(entry.financial_kind || "business");
     setEditedProjectLabel(entry.project_label || "");
     setIsEditing(false);
@@ -161,422 +195,73 @@ export default function EntryItem({
       setIsLinkPickerOpen(false);
       setLinkedSearchTerm("");
     }
-    setIsExpanded((prev) => !prev);
+    setIsExpanded((p) => !p);
   };
 
-  const { date, time } = parseDate(entry.createdAt);
-  const typeLabel = typeLabels[entry.type] || entry.type;
-  const displayContent = entry.text_content ?? entry.content ?? "";
-  const displayBlockType = entry.block_type || "note";
-  const allocationStatus = entry.allocation_status || "new";
+  const ptkiyotCount = (entry.ptkiyot || []).length;
+  const linksCount   = outgoingLinkedEntries.length + incomingLinkedEntries.length;
 
-  const outgoingLinkedEntries = useMemo(() => {
-    const linkedEntries = entry.linkedEntries || [];
-
-    return linkedEntries
-      .map((linkedItem) => {
-        const targetEntry = entries.find((item) => item.code === linkedItem.code);
-
-        return {
-          ...linkedItem,
-          targetEntry: targetEntry || null,
-        };
-      })
-      .filter((item) => item.targetEntry);
-  }, [entry.linkedEntries, entries]);
-
-  const incomingLinkedEntries = useMemo(() => {
-    return entries.filter((item) => {
-      if (item.id === entry.id) return false;
-
-      const linkedEntries = item.linkedEntries || [];
-      return linkedEntries.some((linkedItem) => linkedItem.code === entry.code);
-    });
-  }, [entries, entry.id, entry.code]);
-
-  const availableLinkTargets = useMemo(() => {
-    const currentLinkedCodes = new Set((entry.linkedEntries || []).map((item) => item.code));
-    const normalizedSearch = linkedSearchTerm.trim();
-
-    return entries.filter((item) => {
-      if (item.id === entry.id) return false;
-      if (currentLinkedCodes.has(item.code)) return false;
-
-      if (!normalizedSearch) return true;
-
-      const searchableTitle =
-        item.title && item.title.trim()
-          ? item.title.trim()
-          : item.text_content || item.content || "";
-
-      return (
-        String(item.code).includes(normalizedSearch) ||
-        searchableTitle.toLowerCase().includes(normalizedSearch.toLowerCase())
-      );
-    });
-  }, [entries, entry.id, entry.linkedEntries, linkedSearchTerm]);
-
-  const classificationSummaryParts = [];
-  const hasFinancialType = displayBlockType === "income" || displayBlockType === "expense";
-  const blockTypeLabel = blockTypeLabels[displayBlockType];
-  const financialKindLabel = financialKindLabels[entry.financial_kind];
-  const displayAmount = formatAmountForDisplay(entry.amount);
-  const hasProjectLabel = !!(entry.project_label && entry.project_label.trim());
-
-  if (blockTypeLabel) {
-    if (hasFinancialType && financialKindLabel) {
-      classificationSummaryParts.push(`${blockTypeLabel} ${financialKindLabel}`);
-    } else {
-      classificationSummaryParts.push(blockTypeLabel);
-    }
-  }
-
-  if (displayAmount) {
-    classificationSummaryParts.push(displayAmount);
-  }
-
-  if (hasProjectLabel) {
-    classificationSummaryParts.push(entry.project_label.trim());
-  }
-
-  const classificationSummary = classificationSummaryParts.join(" · ");
-  const shouldShowFallbackSummary =
-    allocationStatus === "new" && !classificationSummary;
-
-  const allocationUi = {
-    new: {
-      border: "1px solid #fdba74",
-      boxShadow: "0 4px 14px rgba(251, 146, 60, 0.14)",
-      background: "linear-gradient(180deg, #fffaf5 0%, #ffffff 100%)",
-      actionText: "סדר בלוק",
-      actionColor: "#c2410c",
-    },
-    partial: {
-      border: "1px solid #fcd34d",
-      boxShadow: "0 3px 12px rgba(245, 158, 11, 0.10)",
-      background: "linear-gradient(180deg, #fffdf5 0%, #ffffff 100%)",
-      actionText: "השלם פרטים",
-      actionColor: "#a16207",
-    },
-    sorted: {
-      border: "1px solid #cbd5e1",
-      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-      background: "white",
-      actionText: "ערוך סיווג",
-      actionColor: "#475569",
-    },
-  };
-
-  const currentAllocationUi = allocationUi[allocationStatus] || allocationUi.new;
-
-  const summaryText =
-    entry.title && entry.title.trim() ? entry.title : displayContent || "";
-
+  // ── Render ──
   return (
     <>
-      <div
-        style={{
-          position: "relative",
-          background: currentAllocationUi.background,
-          borderRadius: "20px",
-          padding: "20px",
-          marginBottom: "16px",
-          boxShadow: currentAllocationUi.boxShadow,
-          border: currentAllocationUi.border,
-          opacity: isArchiveView ? 0.9 : 1,
-        }}
-      >
+      <div style={{
+        background:   "white",
+        borderRadius: "14px",
+        marginBottom: "10px",
+        boxShadow:    "0 1px 4px rgba(0,0,0,0.06)",
+        border:       "1px solid #E7E5E4",
+        borderRight:  `4px solid ${status.borderColor}`,
+        opacity:      isArchiveView ? 0.7 : 1,
+        overflow:     "hidden",
+      }}>
+
+        {/* ── Main clickable area ── */}
         <div
+          onClick={!isEditing ? handleToggleExpanded : undefined}
           style={{
-            position: "absolute",
-            top: "12px",
-            right: "16px",
-            textAlign: "right",
+            padding: "14px 16px 0",
+            cursor: isEditing ? "default" : "pointer",
           }}
         >
-          <div
-            style={{
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "#1e293b",
-            }}
-          >
-            {date}
-          </div>
-          {time && (
-            <div
-              style={{
-                fontSize: "12px",
-                color: "#64748b",
-              }}
-            >
-              {time}
+          {/* Action buttons row (visible when expanded) */}
+          {isExpanded && (
+            <div style={{
+              display:        "flex",
+              justifyContent: "flex-start",
+              gap:            "6px",
+              marginBottom:   "10px",
+            }}>
+              {!isArchiveView ? (
+                !isEditing ? (
+                  <>
+                    <ActionBtn onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} title="עריכה">
+                      ✏️
+                    </ActionBtn>
+                    <ActionBtn onClick={(e) => { e.stopPropagation(); onDelete(entry); }} title="ארכיון">
+                      🗂️
+                    </ActionBtn>
+                  </>
+                ) : (
+                  <>
+                    <ActionBtn onClick={(e) => { e.stopPropagation(); handleSave(); }} title="שמור" accent>
+                      שמור
+                    </ActionBtn>
+                    <ActionBtn onClick={(e) => { e.stopPropagation(); handleCancel(); }} title="בטל">
+                      ביטול
+                    </ActionBtn>
+                  </>
+                )
+              ) : (
+                <ActionBtn onClick={(e) => { e.stopPropagation(); onRestore(entry); }} title="שחזר">
+                  ♻️ שחזר
+                </ActionBtn>
+              )}
             </div>
           )}
-        </div>
 
-        <div
-          style={{
-            position: "absolute",
-            top: "12px",
-            left: "16px",
-            display: "flex",
-            gap: "8px",
-          }}
-        >
-          {isExpanded &&
-            (!isArchiveView ? (
-              !isEditing ? (
-                <>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                      fontSize: "16px",
-                    }}
-                    title="עריכה"
-                  >
-                    ✏️
-                  </button>
-
-                  <button
-                    onClick={() => onDelete(entry)}
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                      fontSize: "16px",
-                    }}
-                    title="העבר לארכיון"
-                  >
-                    🗂️
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={handleSave}
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                      fontSize: "16px",
-                    }}
-                    title="שמור"
-                  >
-                    ✅
-                  </button>
-
-                  <button
-                    onClick={handleCancel}
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                      fontSize: "16px",
-                    }}
-                    title="בטל"
-                  >
-                    ↩️
-                  </button>
-                </>
-              )
-            ) : (
-              <button
-                onClick={() => onRestore(entry)}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  cursor: "pointer",
-                  fontSize: "16px",
-                }}
-                title="שחזר מהארכיון"
-              >
-                ♻️
-              </button>
-            ))}
-        </div>
-
-        <div
-          style={{
-            fontSize: "12px",
-            color: "#64748b",
-            marginBottom: "8px",
-          }}
-        >
-          סוג: {typeLabel} | קוד: {entry.code}
-        </div>
-
-        {(classificationSummary || shouldShowFallbackSummary) && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "10px",
-              marginBottom: "10px",
-              padding: "8px 10px",
-              borderRadius: "12px",
-              background:
-                allocationStatus === "new"
-                  ? "#fff7ed"
-                  : allocationStatus === "partial"
-                    ? "#fffbeb"
-                    : "#f8fafc",
-              border:
-                allocationStatus === "new"
-                  ? "1px solid #fed7aa"
-                  : allocationStatus === "partial"
-                    ? "1px solid #fde68a"
-                    : "1px solid #e2e8f0",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "12px",
-                fontWeight: "600",
-                color: "#0f172a",
-                textAlign: "right",
-                flex: 1,
-                minWidth: 0,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {classificationSummary || "עדיין לא סווג"}
-            </div>
-
-            {!isArchiveView && (
-              <button
-                onClick={() => {
-                  if (!isExpanded) {
-                    setIsExpanded(true);
-                  }
-                  setIsEditing(true);
-                }}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  color: currentAllocationUi.actionColor,
-                  cursor: "pointer",
-                  fontSize: "12px",
-                  fontWeight: "700",
-                  whiteSpace: "nowrap",
-                  padding: 0,
-                  flexShrink: 0,
-                }}
-                title={currentAllocationUi.actionText}
-              >
-                {currentAllocationUi.actionText}
-              </button>
-            )}
-          </div>
-        )}
-
-        {!isExpanded ? (
-          <button
-            onClick={handleToggleExpanded}
-            style={{
-              width: "100%",
-              border: "none",
-              background: "transparent",
-              padding: 0,
-              cursor: "pointer",
-              textAlign: "right",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "8px",
-            }}
-          >
-            <div
-              style={{
-                flex: 1,
-                minWidth: 0,
-                fontSize: "16px",
-                fontWeight: "600",
-                color: "#0f172a",
-                whiteSpace: "pre-wrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                lineHeight: "1.45",
-              }}
-            >
-              {summaryText}
-            </div>
-
-            <div
-              style={{
-                fontSize: "12px",
-                color: "#94a3b8",
-                flexShrink: 0,
-                marginTop: "4px",
-              }}
-            >
-              ▼
-            </div>
-          </button>
-        ) : (
-          <>
-            {!isEditing ? (
-              <button
-                onClick={handleToggleExpanded}
-                style={{
-                  width: "100%",
-                  border: "none",
-                  background: "transparent",
-                  padding: 0,
-                  cursor: "pointer",
-                  textAlign: "right",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "8px",
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {!!entry.title && entry.title.trim() && (
-                    <div
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: "700",
-                        color: "#1e293b",
-                        marginBottom: "6px",
-                        whiteSpace: "pre-wrap",
-                      }}
-                    >
-                      {entry.title}
-                    </div>
-                  )}
-
-                  <div
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: "600",
-                      color: "#0f172a",
-                      whiteSpace: "pre-wrap",
-                    }}
-                  >
-                    {displayContent}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "#94a3b8",
-                    flexShrink: 0,
-                    marginTop: "4px",
-                  }}
-                >
-                  ▲
-                </div>
-              </button>
-            ) : (
+          {/* Content area */}
+          {isEditing ? (
+            <div onClick={(e) => e.stopPropagation()}>
               <EntryEditForm
                 editedTitle={editedTitle}
                 editedContent={editedContent}
@@ -591,70 +276,235 @@ export default function EntryItem({
                 onFinancialKindChange={setEditedFinancialKind}
                 onProjectLabelChange={setEditedProjectLabel}
               />
+            </div>
+          ) : (
+            <div dir="rtl">
+              {entry.title && entry.title.trim() && (
+                <div style={{
+                  fontSize:     "13px",
+                  fontWeight:   700,
+                  color:        "#78716C",
+                  marginBottom: "3px",
+                  textTransform:"uppercase",
+                  letterSpacing:"0.4px",
+                }}>
+                  {entry.title}
+                </div>
+              )}
+              <div style={{
+                fontSize:   "15px",
+                fontWeight: 600,
+                color:      "#1C1917",
+                lineHeight: "1.5",
+                whiteSpace: "pre-wrap",
+                ...(isExpanded ? {} : {
+                  display:            "-webkit-box",
+                  WebkitLineClamp:    2,
+                  WebkitBoxOrient:    "vertical",
+                  overflow:           "hidden",
+                  textOverflow:       "ellipsis",
+                  whiteSpace:         "normal",
+                }),
+              }}>
+                {displayContent}
+              </div>
+            </div>
+          )}
+
+          {/* Metadata row */}
+          <div style={{
+            display:        "flex",
+            alignItems:     "center",
+            justifyContent: "space-between",
+            marginTop:      "12px",
+            paddingBottom:  "12px",
+          }}>
+            {/* Left: chevron */}
+            <div style={{ color: "#A8A29E", fontSize: "11px", lineHeight: 1 }}>
+              {isExpanded ? "▲" : "▼"}
+            </div>
+
+            {/* Right: type · code · date */}
+            <div dir="rtl" style={{
+              display:    "flex",
+              alignItems: "center",
+              gap:        "8px",
+            }}>
+              {/* type chip */}
+              <span style={{
+                fontSize:     "11px",
+                fontWeight:   600,
+                color:        "#78716C",
+                background:   "#F3F4F6",
+                borderRadius: "999px",
+                padding:      "2px 8px",
+              }}>
+                {typeLabel}
+              </span>
+
+              <span style={{ color: "#D1D5DB", fontSize: "11px" }}>·</span>
+
+              <span style={{ fontSize: "11px", color: "#A8A29E" }}>
+                {entry.code}
+              </span>
+
+              {date && (
+                <>
+                  <span style={{ color: "#D1D5DB", fontSize: "11px" }}>·</span>
+                  <span style={{ fontSize: "11px", color: "#A8A29E" }}>
+                    {date}{time ? ` ${time}` : ""}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Expanded sections ── */}
+        {isExpanded && (
+          <div style={{ borderTop: "1px solid #F3F4F6", padding: "14px 16px 16px" }}>
+
+            {/* Classification chip */}
+            {showClassification && !isEditing && (
+              <div style={{
+                display:      "inline-flex",
+                alignItems:   "center",
+                gap:          "8px",
+                background:   status.chipBg,
+                border:       `1px solid ${status.chipBorder}`,
+                borderRadius: "999px",
+                padding:      "4px 12px",
+                marginBottom: "14px",
+              }}>
+                <span style={{ fontSize: "12px", color: status.chipColor, fontWeight: 600 }}>
+                  {classificationText || "עדיין לא סווג"}
+                </span>
+
+                {!isArchiveView && (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    style={{
+                      border:       "none",
+                      background:   "transparent",
+                      color:        status.chipColor,
+                      cursor:       "pointer",
+                      fontSize:     "11px",
+                      fontWeight:   700,
+                      padding:      "0",
+                      opacity:      0.8,
+                    }}
+                  >
+                    {status.actionText} →
+                  </button>
+                )}
+              </div>
             )}
 
-            <div
-              style={{
-                marginTop: "16px",
-                paddingTop: "14px",
-                borderTop: "1px solid #e2e8f0",
-              }}
-            >
-              <button
-                onClick={() => setIsPtkiyotOpen((prev) => !prev)}
-                style={{
-                  border: "1px solid #cbd5e1",
-                  background: "white",
-                  borderRadius: "10px",
-                  padding: "6px 10px",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                  marginBottom: isPtkiyotOpen ? "12px" : "0",
-                }}
-              >
-                {isPtkiyotOpen
-                  ? "הסתר שרשור"
-                  : (entry.ptkiyot || []).length > 0
-                    ? `הצג שרשור (${(entry.ptkiyot || []).length})`
-                    : "הוסף פתקית"}
-              </button>
-
+            {/* Ptkiyot */}
+            <div style={{ marginBottom: "10px" }}>
+              <SectionToggle
+                label={
+                  isPtkiyotOpen
+                    ? "הסתר שרשור"
+                    : ptkiyotCount > 0
+                      ? `שרשור (${ptkiyotCount})`
+                      : "הוסף פתקית"
+                }
+                isOpen={isPtkiyotOpen}
+                onClick={() => setIsPtkiyotOpen((p) => !p)}
+              />
               {isPtkiyotOpen && (
-                <PtkiyotSection
-                  ptkiyot={entry.ptkiyot || []}
-                  ptkitInput={ptkitInput}
-                  onInputChange={setPtkitInput}
-                  onAdd={handleAddPtkit}
-                />
+                <div style={{ marginTop: "10px" }}>
+                  <PtkiyotSection
+                    ptkiyot={entry.ptkiyot || []}
+                    ptkitInput={ptkitInput}
+                    onInputChange={setPtkitInput}
+                    onAdd={handleAddPtkit}
+                  />
+                </div>
               )}
             </div>
 
-            <LinksSection
-              outgoingLinkedEntries={outgoingLinkedEntries}
-              incomingLinkedEntries={incomingLinkedEntries}
-              availableLinkTargets={availableLinkTargets}
-              isArchiveView={isArchiveView}
-              isLinksOpen={isLinksOpen}
-              onToggleLinksOpen={() => setIsLinksOpen((prev) => !prev)}
-              linkedSearchTerm={linkedSearchTerm}
-              onSearchChange={setLinkedSearchTerm}
-              isLinkPickerOpen={isLinkPickerOpen}
-              onTogglePickerOpen={() => setIsLinkPickerOpen((prev) => !prev)}
-              onAddLink={handleAddLinkedEntry}
-              onRemoveLink={(targetCode) => removeLinkedEntry(entry.id, targetCode)}
-              onTogglePin={(targetCode) => togglePinnedLinkedEntry(entry.id, targetCode)}
-              onPeek={setPeekEntry}
+            {/* Links */}
+            <SectionToggle
+              label={
+                isLinksOpen
+                  ? "הסתר קישורים"
+                  : `קישורים (${linksCount})`
+              }
+              isOpen={isLinksOpen}
+              onClick={() => setIsLinksOpen((p) => !p)}
             />
-          </>
+            {isLinksOpen && (
+              <div style={{ marginTop: "10px" }}>
+                <LinksSection
+                  outgoingLinkedEntries={outgoingLinkedEntries}
+                  incomingLinkedEntries={incomingLinkedEntries}
+                  availableLinkTargets={availableLinkTargets}
+                  isArchiveView={isArchiveView}
+                  isLinksOpen={isLinksOpen}
+                  onToggleLinksOpen={() => setIsLinksOpen((p) => !p)}
+                  linkedSearchTerm={linkedSearchTerm}
+                  onSearchChange={setLinkedSearchTerm}
+                  isLinkPickerOpen={isLinkPickerOpen}
+                  onTogglePickerOpen={() => setIsLinkPickerOpen((p) => !p)}
+                  onAddLink={handleAddLinkedEntry}
+                  onRemoveLink={(code) => removeLinkedEntry(entry.id, code)}
+                  onTogglePin={(code) => togglePinnedLinkedEntry(entry.id, code)}
+                  onPeek={setPeekEntry}
+                />
+              </div>
+            )}
+          </div>
         )}
       </div>
 
       {peekEntry && (
-        <EntryPeekModal
-          entry={peekEntry}
-          onClose={() => setPeekEntry(null)}
-        />
+        <EntryPeekModal entry={peekEntry} onClose={() => setPeekEntry(null)} />
       )}
     </>
+  );
+}
+
+// ── Small helper components ───────────────────────────────────────────────────
+
+function ActionBtn({ onClick, title, children, accent }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={{
+        border:       accent ? "none" : "1px solid #E7E5E4",
+        background:   accent ? "#F97316" : "white",
+        color:        accent ? "white"   : "#78716C",
+        borderRadius: "8px",
+        padding:      "5px 12px",
+        cursor:       "pointer",
+        fontSize:     "12px",
+        fontWeight:   accent ? 700 : 400,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SectionToggle({ label, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        border:       "1px solid #E7E5E4",
+        background:   "white",
+        borderRadius: "8px",
+        padding:      "5px 12px",
+        cursor:       "pointer",
+        fontSize:     "12px",
+        color:        "#78716C",
+        fontWeight:   500,
+      }}
+    >
+      {label}
+    </button>
   );
 }
