@@ -46,6 +46,8 @@ export default function App() {
   const [showUndo,        setShowUndo]        = useState(false);
   const [viewMode,        setViewMode]        = useState("active");
   const [activeNav,       setActiveNav]       = useState(0);
+  const [searchTerm,      setSearchTerm]      = useState("");
+  const [typeFilter,      setTypeFilter]      = useState("all");
 
   const undoTimeoutRef = useRef(null);
 
@@ -58,6 +60,15 @@ export default function App() {
   const activeEntries   = entries.filter((e) => !e.isArchived);
   const archivedEntries = entries.filter((e) => e.isArchived);
   const visibleEntries  = viewMode === "active" ? activeEntries : archivedEntries;
+
+  const filteredEntries = visibleEntries.filter((entry) => {
+    if (typeFilter !== "all" && entry.type !== typeFilter) return false;
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return true;
+    const text  = (entry.text_content || entry.content || "").toLowerCase();
+    const title = (entry.title || "").toLowerCase();
+    return text.includes(q) || title.includes(q) || String(entry.code).includes(q);
+  });
 
   const getLocalDateTimeString = () => {
     const now = new Date();
@@ -467,19 +478,125 @@ export default function App() {
           ))}
         </div>
 
+        {/* ─── Search + Filter ───────────────────────────────────── */}
+        <div style={{ marginBottom: isMobile ? "12px" : "16px" }}>
+          {/* Search input */}
+          <div style={{
+            position:     "relative",
+            marginBottom: "10px",
+          }}>
+            <input
+              dir="rtl"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="חפש לפי תוכן, כותרת או קוד..."
+              style={{
+                width:        "100%",
+                borderRadius: "12px",
+                border:       "1px solid #E7E5E4",
+                padding:      searchTerm ? "10px 40px 10px 14px" : "10px 14px",
+                fontSize:     isMobile ? "16px" : "14px",
+                textAlign:    "right",
+                boxSizing:    "border-box",
+                background:   "white",
+                color:        "#1C1917",
+                boxShadow:    searchTerm ? "0 0 0 2px rgba(249,115,22,0.18)" : "none",
+                outline:      "none",
+                transition:   "box-shadow 0.15s ease",
+              }}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                style={{
+                  position:   "absolute",
+                  left:       "10px",
+                  top:        "50%",
+                  transform:  "translateY(-50%)",
+                  border:     "none",
+                  background: "transparent",
+                  color:      "#A8A29E",
+                  fontSize:   "16px",
+                  cursor:     "pointer",
+                  padding:    "0 4px",
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Type filter pills */}
+          <div style={{
+            display:        "flex",
+            flexDirection:  "row-reverse",
+            gap:            "6px",
+            overflowX:      "auto",
+            paddingBottom:  "2px",
+            WebkitOverflowScrolling: "touch",
+            scrollbarWidth: "none",
+          }}>
+            {[
+              { value: "all",      label: "הכל" },
+              { value: "note",     label: "פתק" },
+              { value: "task",     label: "משימה" },
+              { value: "reminder", label: "תזכורת" },
+              { value: "idea",     label: "רעיון" },
+              { value: "finance",  label: "כספי" },
+              { value: "activity", label: "פעילות" },
+            ].map(({ value, label }) => {
+              const isActive = typeFilter === value;
+              return (
+                <button
+                  key={value}
+                  onClick={() => setTypeFilter(value)}
+                  style={{
+                    padding:      "5px 12px",
+                    borderRadius: "999px",
+                    border:       isActive ? "none" : "1px solid #E7E5E4",
+                    background:   isActive ? "#F97316" : "white",
+                    color:        isActive ? "white"   : "#78716C",
+                    fontSize:     "12px",
+                    fontWeight:   isActive ? 700       : 400,
+                    cursor:       "pointer",
+                    flexShrink:   0,
+                    whiteSpace:   "nowrap",
+                    minHeight:    "30px",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* ─── Entries List ──────────────────────────────────────── */}
         <div>
-          {visibleEntries.length === 0 && (
+          {filteredEntries.length === 0 && (
             <div style={{
               textAlign: "center",
               padding:   "60px 20px",
               color:     "#A8A29E",
               fontSize:  "15px",
             }}>
-              {viewMode === "active" ? "אין בלוקים פעילים. שגרו משהו!" : "הארכיון ריק."}
+              {searchTerm || typeFilter !== "all"
+                ? "לא נמצאו תוצאות. נסה חיפוש אחר."
+                : viewMode === "active" ? "אין בלוקים פעילים. שגרו משהו!" : "הארכיון ריק."}
             </div>
           )}
-          {visibleEntries.map((entry) => (
+          {(searchTerm || typeFilter !== "all") && filteredEntries.length > 0 && (
+            <div style={{
+              textAlign:    "right",
+              fontSize:     "12px",
+              color:        "#A8A29E",
+              marginBottom: "10px",
+            }}>
+              {filteredEntries.length} תוצאות
+            </div>
+          )}
+          {filteredEntries.map((entry) => (
             <EntryItem
               key={entry.id}
               entry={entry}
