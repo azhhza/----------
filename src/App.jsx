@@ -217,7 +217,7 @@ export default function App() {
               }}>
                 Kulaba SOS
               </h1>
-              <div style={{
+              <div className="animate-pulse-dot" style={{
                 width: "7px", height: "7px",
                 borderRadius: "50%",
                 background: "#F97316",

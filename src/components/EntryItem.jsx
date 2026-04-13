@@ -203,7 +203,7 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
   // ── Render ──
   return (
     <>
-      <div style={{
+      <div className="entry-card" style={{
         background:   "white",
         borderRadius: isMobile ? "16px" : "14px",
         marginBottom: isMobile ? "12px" : "10px",
@@ -361,7 +361,7 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
 
         {/* ── Expanded sections ── */}
         {isExpanded && (
-          <div style={{ borderTop: "1px solid #F3F4F6", padding: "14px 16px 16px" }}>
+          <div className="animate-expand" style={{ borderTop: "1px solid #F3F4F6", padding: "14px 16px 16px" }}>
 
             {/* Classification chip */}
             {showClassification && !isEditing && (
