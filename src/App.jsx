@@ -61,14 +61,33 @@ export default function App() {
   const archivedEntries = entries.filter((e) => e.isArchived);
   const visibleEntries  = viewMode === "active" ? activeEntries : archivedEntries;
 
-  const filteredEntries = visibleEntries.filter((entry) => {
+  // Nav-based pre-filter
+  const navFilteredEntries = activeNav === 2
+    ? visibleEntries.filter((e) => e.type === "finance" || e.block_type === "income" || e.block_type === "expense")
+    : activeNav === 1
+      ? visibleEntries.filter((e) => e.allocation_status === "sorted")
+      : visibleEntries;
+
+  const filteredEntries = navFilteredEntries.filter((entry) => {
     if (typeFilter !== "all" && entry.type !== typeFilter) return false;
     const q = searchTerm.trim().toLowerCase();
     if (!q) return true;
     const text  = (entry.text_content || entry.content || "").toLowerCase();
-    const title = (entry.title || "").toLowerCase();
-    return text.includes(q) || title.includes(q) || String(entry.code).includes(q);
+    const ttl   = (entry.title || "").toLowerCase();
+    return text.includes(q) || ttl.includes(q) || String(entry.code).includes(q);
   });
+
+  // Financial stats (used in כספים view)
+  const financeEntries = activeEntries.filter(
+    (e) => e.type === "finance" || e.block_type === "income" || e.block_type === "expense"
+  );
+  const totalIncome  = financeEntries
+    .filter((e) => e.block_type === "income")
+    .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const totalExpense = financeEntries
+    .filter((e) => e.block_type === "expense")
+    .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const balance = totalIncome - totalExpense;
 
   const getLocalDateTimeString = () => {
     const now = new Date();
@@ -181,7 +200,7 @@ export default function App() {
           }}>🧱</div>
 
           {NAV_ITEMS.map((item, i) => (
-            <button key={i} onClick={() => setActiveNav(i)} title={item.label} style={{
+            <button key={i} onClick={() => { setActiveNav(i); setSearchTerm(""); setTypeFilter("all"); }} title={item.label} style={{
               width:         "44px",
               height:        "44px",
               borderRadius:  "12px",
@@ -226,7 +245,7 @@ export default function App() {
                 color:       "#1C1917",
                 letterSpacing: "-0.5px",
               }}>
-                Kulaba SOS
+                {activeNav === 2 ? "כספים" : activeNav === 1 ? "ארגון" : "Kulaba SOS"}
               </h1>
               <div className="animate-pulse-dot" style={{
                 width: "7px", height: "7px",
@@ -236,7 +255,11 @@ export default function App() {
               }} />
             </div>
             <p style={{ margin: "3px 0 0", color: "#78716C", fontSize: "13px" }}>
-              רושמים בטירוף, מסדרים בנחת
+              {activeNav === 2
+                ? "סיכום תנועות כספיות"
+                : activeNav === 1
+                  ? "בלוקים מסווגים"
+                  : "רושמים בטירוף, מסדרים בנחת"}
             </p>
           </div>
         </div>
@@ -436,6 +459,37 @@ export default function App() {
           )}
         </div>
 
+        {/* ─── Financial Summary (כספים nav) ───────────────────── */}
+        {activeNav === 2 && (
+          <div dir="rtl" style={{
+            display:      "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap:          "10px",
+            marginBottom: isMobile ? "16px" : "20px",
+          }}>
+            {[
+              { label: "הכנסות",   amount: totalIncome,  color: "#16A34A", bg: "#F0FDF4", border: "#BBF7D0" },
+              { label: "הוצאות",   amount: totalExpense, color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
+              { label: "מאזן",     amount: balance,      color: balance >= 0 ? "#F97316" : "#DC2626", bg: "#FFF7ED", border: "#FED7AA" },
+            ].map(({ label, amount, color, bg, border }) => (
+              <div key={label} style={{
+                background:   bg,
+                border:       `1px solid ${border}`,
+                borderRadius: "14px",
+                padding:      isMobile ? "12px 10px" : "14px 16px",
+                textAlign:    "center",
+              }}>
+                <div style={{ fontSize: "11px", color: "#78716C", fontWeight: 600, marginBottom: "5px" }}>
+                  {label}
+                </div>
+                <div style={{ fontSize: isMobile ? "14px" : "16px", fontWeight: 800, color, direction: "ltr" }}>
+                  ₪{Math.abs(amount).toLocaleString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* ─── View Toggles ──────────────────────────────────────── */}
         <div style={{
           display:        "flex",
@@ -623,7 +677,7 @@ export default function App() {
           zIndex:         100,
         }}>
           {NAV_ITEMS.map((item, i) => (
-            <button key={i} onClick={() => setActiveNav(i)} style={{
+            <button key={i} onClick={() => { setActiveNav(i); setSearchTerm(""); setTypeFilter("all"); }} style={{
               display:       "flex",
               flexDirection: "column",
               alignItems:    "center",

@@ -1,113 +1,83 @@
 function OutgoingLinkRow({ targetEntry, isPinned, isArchiveView, onPeek, onTogglePin, onRemove }) {
   return (
-    <div
-      style={{
-        padding: "10px 12px",
-        borderRadius: "14px",
-        background: isPinned ? "#eff6ff" : "#f8fafc",
-        border: isPinned ? "1px solid #bfdbfe" : "1px solid #e2e8f0",
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-      }}
-    >
-      <div
+    <div style={{
+      padding:       "10px 12px",
+      borderRadius:  "12px",
+      background:    isPinned ? "#FFF7ED" : "#FAFAF9",
+      border:        isPinned ? "1px solid #FED7AA" : "1px solid #E7E5E4",
+      display:       "flex",
+      flexDirection: "column",
+      gap:           "8px",
+    }}>
+      <button
+        onClick={() => onPeek(targetEntry)}
         style={{
-          display: "flex",
-          alignItems: "center",
+          border:         "none",
+          background:     "transparent",
+          padding:        0,
+          margin:         0,
+          cursor:         "pointer",
+          display:        "flex",
+          alignItems:     "center",
           justifyContent: "space-between",
-          gap: "10px",
+          gap:            "10px",
+          width:          "100%",
+          textAlign:      "right",
         }}
+        title="הצג הצצה"
       >
-        <button
-          onClick={() => onPeek(targetEntry)}
-          style={{
-            border: "none",
-            background: "transparent",
-            padding: 0,
-            margin: 0,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "10px",
-            width: "100%",
-            textAlign: "right",
-          }}
-          title="הצג הצצה"
-        >
-          <div
-            style={{
-              fontSize: "12px",
-              color: "#64748b",
-              whiteSpace: "nowrap",
-              flexShrink: 0,
-            }}
-          >
-            קוד: {targetEntry.code}
-          </div>
-
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-              textAlign: "right",
-              color: "#0f172a",
-              fontSize: "14px",
-              fontWeight: isPinned ? "700" : "500",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {targetEntry.title && targetEntry.title.trim()
-              ? targetEntry.title
-              : targetEntry.text_content || targetEntry.content}
-          </div>
-
-          {isPinned && (
-            <div style={{ fontSize: "14px", flexShrink: 0 }} title="קישור נעוץ">
-              📌
-            </div>
-          )}
-        </button>
-      </div>
+        <div style={{ fontSize: "11px", color: "#A8A29E", whiteSpace: "nowrap", flexShrink: 0 }}>
+          {targetEntry.code}
+        </div>
+        <div style={{
+          flex:          1,
+          minWidth:      0,
+          textAlign:     "right",
+          color:         "#1C1917",
+          fontSize:      "14px",
+          fontWeight:    isPinned ? 700 : 500,
+          whiteSpace:    "nowrap",
+          overflow:      "hidden",
+          textOverflow:  "ellipsis",
+        }}>
+          {targetEntry.title && targetEntry.title.trim()
+            ? targetEntry.title
+            : targetEntry.text_content || targetEntry.content}
+        </div>
+        {isPinned && (
+          <div style={{ fontSize: "13px", flexShrink: 0 }} title="קישור נעוץ">📌</div>
+        )}
+      </button>
 
       {!isArchiveView && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row-reverse",
-            gap: "8px",
-          }}
-        >
+        <div style={{ display: "flex", flexDirection: "row-reverse", gap: "6px" }}>
           <button
             onClick={() => onTogglePin(targetEntry.code)}
             style={{
-              border: isPinned ? "1px solid #93c5fd" : "1px solid #cbd5e1",
-              background: "white",
+              border:       isPinned ? "1px solid #FED7AA" : "1px solid #E7E5E4",
+              background:   "white",
               borderRadius: "8px",
-              padding: "6px 10px",
-              cursor: "pointer",
-              fontSize: "12px",
+              padding:      "5px 10px",
+              cursor:       "pointer",
+              fontSize:     "12px",
+              color:        isPinned ? "#C2410C" : "#78716C",
             }}
           >
             {isPinned ? "בטל נעיצה" : "נעץ"}
           </button>
-
           <button
             onClick={() => onRemove(targetEntry.code)}
             style={{
-              border: "1px solid #fecaca",
-              background: "#fff1f2",
-              color: "#9f1239",
+              border:       "1px solid #FED7AA",
+              background:   "#FFF7ED",
+              color:        "#C2410C",
               borderRadius: "8px",
-              padding: "6px 10px",
-              cursor: "pointer",
-              fontSize: "12px",
+              padding:      "5px 10px",
+              cursor:       "pointer",
+              fontSize:     "12px",
             }}
           >
-            הסר קישור
+            הסר
           </button>
         </div>
       )}
@@ -120,44 +90,34 @@ function IncomingLinkRow({ sourceEntry, onPeek }) {
     <button
       onClick={() => onPeek(sourceEntry)}
       style={{
-        width: "100%",
-        border: "1px solid #e2e8f0",
-        borderRadius: "14px",
-        background: "#fafafa",
-        display: "flex",
-        alignItems: "center",
+        width:          "100%",
+        border:         "1px solid #E7E5E4",
+        borderRadius:   "12px",
+        background:     "#FAFAF9",
+        display:        "flex",
+        alignItems:     "center",
         justifyContent: "space-between",
-        gap: "10px",
-        padding: "10px 12px",
-        cursor: "pointer",
-        textAlign: "right",
+        gap:            "10px",
+        padding:        "10px 12px",
+        cursor:         "pointer",
+        textAlign:      "right",
       }}
       title="הצג הצצה"
     >
-      <div
-        style={{
-          fontSize: "12px",
-          color: "#64748b",
-          whiteSpace: "nowrap",
-          flexShrink: 0,
-        }}
-      >
-        קוד: {sourceEntry.code}
+      <div style={{ fontSize: "11px", color: "#A8A29E", whiteSpace: "nowrap", flexShrink: 0 }}>
+        {sourceEntry.code}
       </div>
-
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          textAlign: "right",
-          color: "#0f172a",
-          fontSize: "14px",
-          fontWeight: "500",
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-        }}
-      >
+      <div style={{
+        flex:          1,
+        minWidth:      0,
+        textAlign:     "right",
+        color:         "#1C1917",
+        fontSize:      "14px",
+        fontWeight:    500,
+        whiteSpace:    "nowrap",
+        overflow:      "hidden",
+        textOverflow:  "ellipsis",
+      }}>
         {sourceEntry.title && sourceEntry.title.trim()
           ? sourceEntry.title
           : sourceEntry.text_content || sourceEntry.content}
@@ -185,205 +145,137 @@ export default function LinksSection({
   const totalLinks = outgoingLinkedEntries.length + incomingLinkedEntries.length;
 
   return (
-    <div
-      style={{
-        marginTop: "16px",
-        paddingTop: "14px",
-        borderTop: "1px solid #e2e8f0",
-      }}
-    >
-      <button
-        onClick={onToggleLinksOpen}
-        style={{
-          border: "1px solid #cbd5e1",
-          background: "white",
-          borderRadius: "10px",
-          padding: "6px 10px",
-          cursor: "pointer",
-          fontSize: "13px",
-          marginBottom: isLinksOpen ? "12px" : "0",
-        }}
-      >
-        {isLinksOpen ? "הסתר קישורים" : `הצג קישורים (${totalLinks})`}
-      </button>
-
+    <div style={{ marginTop: "12px" }}>
       {isLinksOpen && (
-        <div
-          dir="rtl"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-            background: "#f8fafc",
-            border: "1px solid #e2e8f0",
-            borderRadius: "16px",
-            padding: "14px",
-          }}
-        >
+        <div dir="rtl" style={{
+          display:       "flex",
+          flexDirection: "column",
+          gap:           "14px",
+          background:    "#FAFAF9",
+          border:        "1px solid #E7E5E4",
+          borderRadius:  "14px",
+          padding:       "14px",
+        }}>
+          {/* Outgoing */}
           <div>
-            <div
-              style={{
-                fontSize: "13px",
-                fontWeight: "700",
-                color: "#334155",
-                marginBottom: "8px",
-              }}
-            >
+            <div style={{
+              fontSize:     "12px",
+              fontWeight:   700,
+              color:        "#78716C",
+              marginBottom: "8px",
+              textTransform: "uppercase",
+              letterSpacing: "0.3px",
+            }}>
               קישורים לפתקים נוספים
             </div>
 
             {!isArchiveView && (
-              <div
-                style={{
-                  marginBottom: "12px",
-                  border: "1px solid #dbe3ea",
-                  borderRadius: "16px",
-                  background: "#ffffff",
-                  boxShadow: "0 8px 20px rgba(15,23,42,0.05)",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row-reverse",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "10px",
-                    padding: "12px 14px",
-                    background: "#f1f5f9",
-                    borderBottom: isLinkPickerOpen ? "1px solid #e2e8f0" : "none",
-                  }}
-                >
+              <div style={{
+                marginBottom: "10px",
+                border:       "1px solid #E7E5E4",
+                borderRadius: "12px",
+                background:   "white",
+                overflow:     "hidden",
+              }}>
+                <div style={{
+                  display:        "flex",
+                  flexDirection:  "row-reverse",
+                  alignItems:     "center",
+                  justifyContent: "space-between",
+                  gap:            "10px",
+                  padding:        "10px 12px",
+                  background:     "#F5F5F4",
+                  borderBottom:   isLinkPickerOpen ? "1px solid #E7E5E4" : "none",
+                }}>
                   <button
                     onClick={onTogglePickerOpen}
                     style={{
-                      border: "none",
-                      background: "#2563eb",
-                      color: "white",
-                      borderRadius: "10px",
-                      padding: "8px 12px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      flexShrink: 0,
+                      border:       "none",
+                      background:   "#F97316",
+                      color:        "white",
+                      borderRadius: "8px",
+                      padding:      "7px 12px",
+                      cursor:       "pointer",
+                      fontSize:     "13px",
+                      fontWeight:   700,
+                      flexShrink:   0,
                     }}
                   >
-                    {isLinkPickerOpen ? "סגור" : "הוסף קישור"}
+                    {isLinkPickerOpen ? "סגור" : "+ קישור"}
                   </button>
-
                   <div style={{ textAlign: "right", flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        fontWeight: "700",
-                        color: "#0f172a",
-                        marginBottom: "2px",
-                      }}
-                    >
-                      הוספת קישור חדש
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#1C1917" }}>
+                      הוספת קישור
                     </div>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#64748b",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      חפש פתק קיים לפי קוד או כותרת
+                    <div style={{ fontSize: "12px", color: "#A8A29E" }}>
+                      חפש לפי קוד או כותרת
                     </div>
                   </div>
                 </div>
 
                 {isLinkPickerOpen && (
                   <div style={{ padding: "12px" }}>
-                    <div style={{ marginBottom: "10px" }}>
-                      <input
-                        dir="rtl"
-                        value={linkedSearchTerm}
-                        onChange={(e) => onSearchChange(e.target.value)}
-                        placeholder="חפש לפי קוד או כותרת..."
-                        style={{
-                          width: "100%",
-                          borderRadius: "12px",
-                          border: "1px solid #cbd5e1",
-                          padding: "10px 12px",
-                          fontSize: "14px",
-                          textAlign: "right",
-                          boxSizing: "border-box",
-                          background: "white",
-                        }}
-                      />
-                    </div>
-
-                    <div
+                    <input
+                      dir="rtl"
+                      value={linkedSearchTerm}
+                      onChange={(e) => onSearchChange(e.target.value)}
+                      placeholder="חפש לפי קוד או כותרת..."
                       style={{
-                        border: "1px solid #e2e8f0",
-                        borderRadius: "14px",
-                        background: "white",
-                        overflow: "hidden",
+                        width:        "100%",
+                        borderRadius: "10px",
+                        border:       "1px solid #E7E5E4",
+                        padding:      "9px 12px",
+                        fontSize:     "14px",
+                        textAlign:    "right",
+                        boxSizing:    "border-box",
+                        background:   "#FAFAF9",
+                        marginBottom: "8px",
                       }}
-                    >
-                      <div
-                        style={{
-                          padding: "8px 12px",
-                          background: "#f8fafc",
-                          borderBottom: "1px solid #e2e8f0",
-                          fontSize: "12px",
-                          color: "#64748b",
-                          textAlign: "right",
-                        }}
-                      >
+                    />
+                    <div style={{
+                      border:       "1px solid #E7E5E4",
+                      borderRadius: "10px",
+                      background:   "white",
+                      overflow:     "hidden",
+                    }}>
+                      <div style={{
+                        padding:        "7px 12px",
+                        background:     "#FAFAF9",
+                        borderBottom:   "1px solid #E7E5E4",
+                        fontSize:       "11px",
+                        color:          "#A8A29E",
+                        textAlign:      "right",
+                      }}>
                         {availableLinkTargets.length > 0
-                          ? `נמצאו ${availableLinkTargets.length} פתקים מתאימים`
-                          : "לא נמצאו פתקים מתאימים"}
+                          ? `${availableLinkTargets.length} פתקים מתאימים`
+                          : "לא נמצאו פתקים"}
                       </div>
-
                       {availableLinkTargets.length > 0 ? (
-                        <div
-                          style={{
-                            maxHeight: "220px",
-                            overflowY: "auto",
-                            display: "flex",
-                            flexDirection: "column",
-                          }}
-                        >
+                        <div style={{ maxHeight: "200px", overflowY: "auto", display: "flex", flexDirection: "column" }}>
                           {availableLinkTargets.map((item, index) => (
                             <button
                               key={item.id}
                               onClick={() => onAddLink(item.code)}
                               style={{
-                                border: "none",
-                                borderBottom:
-                                  index === availableLinkTargets.length - 1
-                                    ? "none"
-                                    : "1px solid #f1f5f9",
-                                background: "white",
-                                cursor: "pointer",
-                                padding: "12px",
-                                textAlign: "right",
+                                border:       "none",
+                                borderBottom: index === availableLinkTargets.length - 1 ? "none" : "1px solid #F5F5F4",
+                                background:   "white",
+                                cursor:       "pointer",
+                                padding:      "10px 12px",
+                                textAlign:    "right",
                               }}
                             >
-                              <div
-                                style={{
-                                  fontSize: "12px",
-                                  color: "#64748b",
-                                  marginBottom: "3px",
-                                }}
-                              >
+                              <div style={{ fontSize: "11px", color: "#A8A29E", marginBottom: "2px" }}>
                                 קוד: {item.code}
                               </div>
-                              <div
-                                style={{
-                                  fontSize: "14px",
-                                  color: "#0f172a",
-                                  fontWeight: "600",
-                                  whiteSpace: "nowrap",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                }}
-                              >
+                              <div style={{
+                                fontSize:     "14px",
+                                color:        "#1C1917",
+                                fontWeight:   600,
+                                whiteSpace:   "nowrap",
+                                overflow:     "hidden",
+                                textOverflow: "ellipsis",
+                              }}>
                                 {item.title && item.title.trim()
                                   ? item.title
                                   : item.text_content || item.content}
@@ -392,16 +284,8 @@ export default function LinksSection({
                           ))}
                         </div>
                       ) : (
-                        <div
-                          style={{
-                            padding: "14px 12px",
-                            fontSize: "13px",
-                            color: "#94a3b8",
-                            textAlign: "right",
-                            background: "#ffffff",
-                          }}
-                        >
-                          נסה לחפש לפי קוד אחר או תחילת כותרת.
+                        <div style={{ padding: "12px", fontSize: "13px", color: "#A8A29E", textAlign: "right" }}>
+                          נסה חיפוש אחר.
                         </div>
                       )}
                     </div>
@@ -411,7 +295,7 @@ export default function LinksSection({
             )}
 
             {outgoingLinkedEntries.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {outgoingLinkedEntries.map((item) => (
                   <OutgoingLinkRow
                     key={item.targetEntry.id}
@@ -425,51 +309,47 @@ export default function LinksSection({
                 ))}
               </div>
             ) : (
-              <div
-                style={{
-                  fontSize: "13px",
-                  color: "#94a3b8",
-                  background: "#ffffff",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "12px",
-                  padding: "10px 12px",
-                }}
-              >
-                אין עדיין קישורים לפתקים נוספים.
+              <div style={{
+                fontSize:     "13px",
+                color:        "#A8A29E",
+                background:   "white",
+                border:       "1px solid #E7E5E4",
+                borderRadius: "10px",
+                padding:      "10px 12px",
+              }}>
+                אין עדיין קישורים.
               </div>
             )}
           </div>
 
+          {/* Incoming */}
           <div>
-            <div
-              style={{
-                fontSize: "13px",
-                fontWeight: "700",
-                color: "#334155",
-                marginBottom: "8px",
-              }}
-            >
+            <div style={{
+              fontSize:     "12px",
+              fontWeight:   700,
+              color:        "#78716C",
+              marginBottom: "8px",
+              textTransform: "uppercase",
+              letterSpacing: "0.3px",
+            }}>
               אזכורים לפתק הזה
             </div>
-
             {incomingLinkedEntries.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {incomingLinkedEntries.map((item) => (
                   <IncomingLinkRow key={item.id} sourceEntry={item} onPeek={onPeek} />
                 ))}
               </div>
             ) : (
-              <div
-                style={{
-                  fontSize: "13px",
-                  color: "#94a3b8",
-                  background: "#ffffff",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "12px",
-                  padding: "10px 12px",
-                }}
-              >
-                אין עדיין אזכורים לפתק הזה.
+              <div style={{
+                fontSize:     "13px",
+                color:        "#A8A29E",
+                background:   "white",
+                border:       "1px solid #E7E5E4",
+                borderRadius: "10px",
+                padding:      "10px 12px",
+              }}>
+                אין עדיין אזכורים.
               </div>
             )}
           </div>
