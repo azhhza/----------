@@ -29,6 +29,14 @@ function useIsMobile() {
   return isMobile;
 }
 
+function StatPill({ n, label, color = "#78716C" }) {
+  return (
+    <span style={{ fontSize: "12px", color: "#A8A29E" }}>
+      <span style={{ color, fontWeight: 800 }}>{n}</span>{" "}{label}
+    </span>
+  );
+}
+
 export default function App() {
   const entries     = useStore((state) => state.entries);
   const addEntry    = useStore((state) => state.addEntry);
@@ -59,6 +67,8 @@ export default function App() {
 
   const activeEntries   = entries.filter((e) => !e.isArchived);
   const archivedEntries = entries.filter((e) => e.isArchived);
+  const newEntries      = activeEntries.filter((e) => e.allocation_status === "new");
+  const taskEntries     = activeEntries.filter((e) => e.type === "task");
   const visibleEntries  = viewMode === "active" ? activeEntries : archivedEntries;
 
   // Nav-based pre-filter
@@ -239,28 +249,48 @@ export default function App() {
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
               <h1 style={{
-                margin:      0,
-                fontSize:    isMobile ? "20px" : "24px",
-                fontWeight:  800,
-                color:       "#1C1917",
-                letterSpacing: "-0.5px",
+                margin:        0,
+                fontSize:      isMobile ? "22px" : "26px",
+                fontWeight:    900,
+                color:         "#1C1917",
+                letterSpacing: "-0.8px",
               }}>
                 {activeNav === 2 ? "כספים" : activeNav === 1 ? "ארגון" : "Kulaba SOS"}
               </h1>
               <div className="animate-pulse-dot" style={{
-                width: "7px", height: "7px",
+                width:        "8px",
+                height:       "8px",
                 borderRadius: "50%",
-                background: "#F97316",
-                flexShrink: 0,
+                background:   "#F97316",
+                flexShrink:   0,
+                boxShadow:    "0 0 0 3px rgba(249,115,22,0.18)",
               }} />
             </div>
-            <p style={{ margin: "3px 0 0", color: "#78716C", fontSize: "13px" }}>
-              {activeNav === 2
-                ? "סיכום תנועות כספיות"
-                : activeNav === 1
-                  ? "בלוקים מסווגים"
-                  : "רושמים בטירוף, מסדרים בנחת"}
-            </p>
+
+            {/* Live stats row */}
+            {activeNav === 0 && (
+              <div dir="rtl" style={{
+                display:    "flex",
+                gap:        "12px",
+                marginTop:  "6px",
+                flexWrap:   "wrap",
+                alignItems: "center",
+              }}>
+                <StatPill n={activeEntries.length} label="פעילים" />
+                {newEntries.length > 0 && (
+                  <StatPill n={newEntries.length} label="ממתינים לסיווג" color="#F97316" />
+                )}
+                {taskEntries.length > 0 && (
+                  <StatPill n={taskEntries.length} label="משימות" color="#10B981" />
+                )}
+              </div>
+            )}
+
+            {activeNav !== 0 && (
+              <p style={{ margin: "4px 0 0", color: "#A8A29E", fontSize: "13px" }}>
+                {activeNav === 2 ? "תנועות כספיות פעילות" : "בלוקים מסווגים"}
+              </p>
+            )}
           </div>
         </div>
 
@@ -461,32 +491,76 @@ export default function App() {
 
         {/* ─── Financial Summary (כספים nav) ───────────────────── */}
         {activeNav === 2 && (
-          <div dir="rtl" style={{
-            display:      "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap:          "10px",
-            marginBottom: isMobile ? "16px" : "20px",
-          }}>
-            {[
-              { label: "הכנסות",   amount: totalIncome,  color: "#16A34A", bg: "#F0FDF4", border: "#BBF7D0" },
-              { label: "הוצאות",   amount: totalExpense, color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
-              { label: "מאזן",     amount: balance,      color: balance >= 0 ? "#F97316" : "#DC2626", bg: "#FFF7ED", border: "#FED7AA" },
-            ].map(({ label, amount, color, bg, border }) => (
-              <div key={label} style={{
-                background:   bg,
-                border:       `1px solid ${border}`,
-                borderRadius: "14px",
-                padding:      isMobile ? "12px 10px" : "14px 16px",
-                textAlign:    "center",
-              }}>
-                <div style={{ fontSize: "11px", color: "#78716C", fontWeight: 600, marginBottom: "5px" }}>
-                  {label}
+          <div dir="rtl" style={{ marginBottom: isMobile ? "16px" : "20px" }}>
+            {/* Three stat cards */}
+            <div style={{
+              display:             "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap:                 "8px",
+              marginBottom:        "10px",
+            }}>
+              {[
+                { label: "הכנסות", amount: totalIncome,  color: "#16A34A", bg: "#F0FDF4", border: "#BBF7D0" },
+                { label: "הוצאות", amount: totalExpense, color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
+                { label: "מאזן",   amount: balance,      color: balance >= 0 ? "#F97316" : "#DC2626", bg: "#FFF7ED", border: "#FED7AA" },
+              ].map(({ label, amount, color, bg, border }) => (
+                <div key={label} style={{
+                  background:   bg,
+                  border:       `1px solid ${border}`,
+                  borderRadius: "14px",
+                  padding:      isMobile ? "11px 8px" : "14px 16px",
+                  textAlign:    "center",
+                }}>
+                  <div style={{ fontSize: "11px", color: "#78716C", fontWeight: 600, marginBottom: "5px" }}>
+                    {label}
+                  </div>
+                  <div style={{ fontSize: isMobile ? "14px" : "17px", fontWeight: 800, color, direction: "ltr" }}>
+                    ₪{Math.abs(amount).toLocaleString()}
+                  </div>
                 </div>
-                <div style={{ fontSize: isMobile ? "14px" : "16px", fontWeight: 800, color, direction: "ltr" }}>
-                  ₪{Math.abs(amount).toLocaleString()}
+              ))}
+            </div>
+
+            {/* Ratio bar */}
+            {(totalIncome > 0 || totalExpense > 0) && (
+              <div style={{
+                background:   "white",
+                border:       "1px solid #E7E5E4",
+                borderRadius: "12px",
+                padding:      "12px 14px",
+              }}>
+                <div style={{
+                  display:        "flex",
+                  justifyContent: "space-between",
+                  fontSize:       "11px",
+                  color:          "#A8A29E",
+                  marginBottom:   "7px",
+                  direction:      "rtl",
+                }}>
+                  <span>הכנסות vs הוצאות</span>
+                  <span>
+                    {totalIncome + totalExpense > 0
+                      ? `${Math.round((totalIncome / (totalIncome + totalExpense)) * 100)}% הכנסה`
+                      : "—"}
+                  </span>
+                </div>
+                <div style={{
+                  height:       "8px",
+                  borderRadius: "999px",
+                  background:   "#FEE2E2",
+                  overflow:     "hidden",
+                  direction:    "rtl",
+                }}>
+                  <div style={{
+                    height:       "100%",
+                    borderRadius: "999px",
+                    background:   "linear-gradient(to left, #22C55E, #16A34A)",
+                    width:        `${totalIncome + totalExpense > 0 ? Math.round((totalIncome / (totalIncome + totalExpense)) * 100) : 0}%`,
+                    transition:   "width 0.4s ease",
+                  }} />
                 </div>
               </div>
-            ))}
+            )}
           </div>
         )}
 
