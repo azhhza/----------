@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 const getLocalDateTimeString = () => {
   const now = new Date();
@@ -240,7 +241,9 @@ const initialEntries = [
   },
 ];
 
-const useStore = create((set) => ({
+const useStore = create(
+  persist(
+    (set) => ({
   entries: initialEntries.map((entry, index) => normalizeBlock(entry, 1001 + index)),
   nextCode: 1004,
 
@@ -558,6 +561,11 @@ const useStore = create((set) => ({
         }),
       };
     }),
-}));
+}),
+    {
+      name: "kulaba-store",
+    }
+  )
+);
 
 export default useStore;
