@@ -7,19 +7,20 @@ import LinksSection from "./LinksSection";
 
 // ─── Per-type visual config ───────────────────────────────────────────────────
 const TYPE_CONFIG = {
-  note:     { icon: "📝", label: "פתק"         },
-  task:     { icon: "☑️",  label: "משימה"       },
-  reminder: { icon: "🔔", label: "תזכורת"      },
-  idea:     { icon: "💡", label: "רעיון"        },
-  finance:  { icon: "💸", label: "תנועה כספית" },
-  activity: { icon: "🏃", label: "פעילות"      },
+  note:     { icon: "📝", label: "פתק",          iconBg: "#EEF2FF" },
+  task:     { icon: "☑️",  label: "משימה",        iconBg: "#DCFCE7" },
+  reminder: { icon: "🔔", label: "תזכורת",       iconBg: "#FEF3C7" },
+  idea:     { icon: "💡", label: "רעיון",         iconBg: "#F5F3FF" },
+  finance:  { icon: "💸", label: "תנועה כספית",  iconBg: "#FFF7ED" },
+  activity: { icon: "🏃", label: "פעילות",       iconBg: "#E0F2FE" },
 };
 
-// ─── Status design tokens ─────────────────────────────────────────────────────
+// ─── Status tokens ────────────────────────────────────────────────────────────
 const STATUS = {
   new: {
     borderColor: "#F97316",
-    cardBg:      "rgba(249,115,22,0.03)",
+    cardBg:      "rgba(249,115,22,0.028)",
+    cardShadow:  "0 1px 2px rgba(28,25,23,0.04), 0 6px 20px rgba(249,115,22,0.12), 0 0 0 1px rgba(249,115,22,0.09)",
     dot:         "#F97316",
     chipBg:      "#FFF7ED",
     chipBorder:  "#FED7AA",
@@ -28,7 +29,8 @@ const STATUS = {
   },
   partial: {
     borderColor: "#F59E0B",
-    cardBg:      "rgba(245,158,11,0.025)",
+    cardBg:      "rgba(245,158,11,0.022)",
+    cardShadow:  "0 1px 2px rgba(28,25,23,0.04), 0 6px 18px rgba(28,25,23,0.07), 0 0 0 1px rgba(245,158,11,0.09)",
     dot:         "#F59E0B",
     chipBg:      "#FFFBEB",
     chipBorder:  "#FDE68A",
@@ -38,6 +40,7 @@ const STATUS = {
   sorted: {
     borderColor: "#E2E0DE",
     cardBg:      "#FFFFFF",
+    cardShadow:  "0 1px 2px rgba(28,25,23,0.04), 0 4px 14px rgba(28,25,23,0.06)",
     dot:         null,
     chipBg:      "#F5F5F4",
     chipBorder:  "#E7E5E4",
@@ -46,12 +49,12 @@ const STATUS = {
   },
 };
 
-const blockTypeLabels    = { income: "הכנסה", expense: "הוצאה", note: "הערה" };
+const blockTypeLabels     = { income: "הכנסה", expense: "הוצאה", note: "הערה" };
 const financialKindLabels = { business: "עסקי", private: "פרטי", project: "פרויקט" };
 
-function formatAmount(value) {
-  if (value === null || value === undefined || value === "") return "";
-  const n = Number(value);
+function formatAmount(val) {
+  if (val === null || val === undefined || val === "") return "";
+  const n = Number(val);
   return Number.isNaN(n) ? "" : `₪${n.toLocaleString()}`;
 }
 
@@ -92,13 +95,13 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
   const [isLinkPickerOpen, setIsLinkPickerOpen] = useState(false);
   const [peekEntry,        setPeekEntry]        = useState(null);
 
-  // ── Derived display ──
+  // ── Derived values ──
   const allocationStatus = entry.allocation_status || "new";
   const status           = STATUS[allocationStatus] || STATUS.new;
   const displayContent   = entry.text_content ?? entry.content ?? "";
-  const typeConfig       = TYPE_CONFIG[entry.type] || { icon: "📝", label: entry.type };
+  const typeConfig       = TYPE_CONFIG[entry.type] || { icon: "📝", label: entry.type, iconBg: "#F5F5F4" };
 
-  // Classification chip
+  // Classification
   const classificationParts = [];
   const hasFinancialType    = entry.block_type === "income" || entry.block_type === "expense";
   const blockLabel          = blockTypeLabels[entry.block_type];
@@ -109,21 +112,20 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
     classificationParts.push(hasFinancialType && kindLabel ? `${blockLabel} ${kindLabel}` : blockLabel);
   }
   if (amountDisplay) classificationParts.push(amountDisplay);
-  if (entry.project_label && entry.project_label.trim()) classificationParts.push(entry.project_label.trim());
+  if (entry.project_label?.trim()) classificationParts.push(entry.project_label.trim());
 
   const classificationText = classificationParts.join(" · ");
   const showClassification = classificationText || allocationStatus === "new";
 
   // Date
   const parseDate = (s) => {
-    if (!s) return { date: "", time: "" };
-    const [datePart, timePart] = s.split(" ");
-    if (!datePart) return { date: s, time: "" };
+    if (!s) return "";
+    const [datePart] = s.split(" ");
+    if (!datePart) return "";
     const [y, m, d] = datePart.split("-");
-    if (!y || !m || !d) return { date: s, time: "" };
-    return { date: `${d}/${m}`, time: timePart || "" };
+    return (y && m && d) ? `${d}/${m}` : "";
   };
-  const { date } = parseDate(entry.createdAt);
+  const date = parseDate(entry.createdAt);
 
   // ── Linked entries ──
   const outgoingLinkedEntries = useMemo(() => {
@@ -145,7 +147,7 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
     return entries.filter((e) => {
       if (e.id === entry.id || linked.has(e.code)) return false;
       if (!q) return true;
-      const t = (e.title && e.title.trim()) ? e.title : (e.text_content || e.content || "");
+      const t = (e.title?.trim()) ? e.title : (e.text_content || e.content || "");
       return String(e.code).includes(q) || t.toLowerCase().includes(q);
     });
   }, [entries, entry.id, entry.linkedEntries, linkedSearchTerm]);
@@ -213,21 +215,22 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
       <div
         className="entry-card"
         style={{
-          background:   isArchiveView ? "#F9F8F7" : status.cardBg,
-          borderRadius: "16px",
-          marginBottom: "10px",
-          boxShadow:    "0 1px 3px rgba(28,25,23,0.05), 0 1px 2px rgba(28,25,23,0.04)",
-          border:       "1px solid #ECEAE8",
+          background:   isArchiveView ? "#F8F6F4" : status.cardBg,
+          borderRadius: "20px",
+          marginBottom: isMobile ? "12px" : "10px",
+          boxShadow:    status.cardShadow,
+          border:       "none",
           borderRight:  `4px solid ${status.borderColor}`,
-          opacity:      isArchiveView ? 0.72 : 1,
+          opacity:      isArchiveView ? 0.70 : 1,
           overflow:     "hidden",
         }}
       >
-        {/* ── Clickable zone ────────────────────────────────────── */}
+        {/* ── Clickable zone ── */}
         <div
           onClick={!isEditing ? handleToggleExpanded : undefined}
           style={{ cursor: isEditing ? "default" : "pointer" }}
         >
+
           {/* Top metadata row */}
           <div
             dir="rtl"
@@ -235,18 +238,28 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
               display:        "flex",
               alignItems:     "center",
               justifyContent: "space-between",
-              padding:        "12px 14px 0",
+              padding:        "13px 14px 0",
             }}
           >
-            {/* Right: type icon + label + status dot */}
-            <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-              <span style={{ fontSize: "14px", lineHeight: 1, flexShrink: 0 }}>
+            {/* Right: icon badge + type label + status dot */}
+            <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+              <div style={{
+                width:          "28px",
+                height:         "28px",
+                borderRadius:   "8px",
+                background:     typeConfig.iconBg,
+                display:        "flex",
+                alignItems:     "center",
+                justifyContent: "center",
+                fontSize:       "14px",
+                flexShrink:     0,
+              }}>
                 {typeConfig.icon}
-              </span>
+              </div>
               <span style={{
-                fontSize:   "11px",
-                fontWeight: 600,
-                color:      "#A8A29E",
+                fontSize:      "11px",
+                fontWeight:    600,
+                color:         "#A8A29E",
                 letterSpacing: "0.2px",
               }}>
                 {typeConfig.label}
@@ -258,16 +271,13 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
                   borderRadius: "50%",
                   background:   status.dot,
                   flexShrink:   0,
-                  marginRight:  "1px",
                 }} />
               )}
             </div>
 
             {/* Left: code + date */}
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <span style={{ fontSize: "11px", color: "#C8C3BE" }}>
-                #{entry.code}
-              </span>
+              <span style={{ fontSize: "11px", color: "#C8C3BE" }}>#{entry.code}</span>
               {date && (
                 <>
                   <span style={{ fontSize: "10px", color: "#DDD9D6" }}>·</span>
@@ -277,7 +287,7 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
             </div>
           </div>
 
-          {/* Content area */}
+          {/* Content */}
           {isEditing ? (
             <div onClick={(e) => e.stopPropagation()} style={{ padding: "10px 14px 0" }}>
               <EntryEditForm
@@ -297,14 +307,14 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
             </div>
           ) : (
             <div dir="rtl" style={{ padding: "8px 14px 0" }}>
-              {entry.title && entry.title.trim() && (
+              {entry.title?.trim() && (
                 <div style={{
-                  fontSize:     "11px",
-                  fontWeight:   700,
-                  color:        "#A8A29E",
-                  marginBottom: "3px",
+                  fontSize:      "11px",
+                  fontWeight:    700,
+                  color:         "#B0A89E",
+                  marginBottom:  "3px",
                   textTransform: "uppercase",
-                  letterSpacing: "0.5px",
+                  letterSpacing: "0.6px",
                 }}>
                   {entry.title}
                 </div>
@@ -317,10 +327,10 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
                 ...(isExpanded
                   ? { whiteSpace: "pre-wrap" }
                   : {
-                      display:          "-webkit-box",
-                      WebkitLineClamp:  3,
-                      WebkitBoxOrient:  "vertical",
-                      overflow:         "hidden",
+                      display:         "-webkit-box",
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: "vertical",
+                      overflow:        "hidden",
                     }),
               }}>
                 {displayContent}
@@ -335,19 +345,16 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
               display:        "flex",
               alignItems:     "center",
               justifyContent: "space-between",
-              padding:        "10px 14px 12px",
+              padding:        "10px 14px 13px",
               marginTop:      "10px",
-              borderTop:      "1px solid #F2EFEC",
+              borderTop:      "1px solid rgba(28,25,23,0.05)",
             }}
           >
-            {/* Right side: classification info or save/cancel */}
+            {/* Right: status info or action buttons */}
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               {isEditing ? (
                 <>
-                  <ActionBtn
-                    onClick={(e) => { e.stopPropagation(); handleSave(); }}
-                    accent
-                  >
+                  <ActionBtn accent onClick={(e) => { e.stopPropagation(); handleSave(); }}>
                     ✓ שמור
                   </ActionBtn>
                   <ActionBtn onClick={(e) => { e.stopPropagation(); handleCancel(); }}>
@@ -355,7 +362,6 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
                   </ActionBtn>
                 </>
               ) : isExpanded ? (
-                // Action buttons visible when expanded
                 !isArchiveView ? (
                   <>
                     <ActionBtn onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}>
@@ -370,39 +376,31 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
                     ↩️ שחזר
                   </ActionBtn>
                 )
-              ) : (
-                // Classification chip or "unclassified" badge when collapsed
-                classificationText ? (
-                  <span style={{
-                    fontSize:     "12px",
-                    color:        status.chipColor,
-                    background:   status.chipBg,
-                    border:       `1px solid ${status.chipBorder}`,
-                    borderRadius: "999px",
-                    padding:      "3px 10px",
-                    fontWeight:   600,
-                  }}>
-                    {classificationText}
-                  </span>
-                ) : allocationStatus === "new" ? (
-                  <span style={{
-                    fontSize:   "11px",
-                    color:      "#F97316",
-                    fontWeight: 600,
-                    opacity:    0.85,
-                  }}>
-                    טרם סווג
-                  </span>
-                ) : null
-              )}
+              ) : classificationText ? (
+                <span style={{
+                  fontSize:     "12px",
+                  color:        status.chipColor,
+                  background:   status.chipBg,
+                  border:       `1px solid ${status.chipBorder}`,
+                  borderRadius: "999px",
+                  padding:      "3px 10px",
+                  fontWeight:   600,
+                }}>
+                  {classificationText}
+                </span>
+              ) : allocationStatus === "new" ? (
+                <span style={{ fontSize: "11px", color: "#F97316", fontWeight: 600, opacity: 0.9 }}>
+                  טרם סווג
+                </span>
+              ) : null}
             </div>
 
-            {/* Left: chevron */}
+            {/* Left: animated chevron */}
             <div style={{
               color:      "#C8C3BE",
               fontSize:   "10px",
               transform:  isExpanded ? "rotate(180deg)" : "rotate(0deg)",
-              transition: "transform 0.2s ease",
+              transition: "transform 0.22s ease",
               flexShrink: 0,
             }}>
               ▼
@@ -410,16 +408,17 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
           </div>
         </div>
 
-        {/* ── Expanded detail section ───────────────────────────── */}
+        {/* ── Expanded section ── */}
         {isExpanded && (
           <div
             className="animate-expand"
             style={{
-              borderTop: "1px solid #F2EFEC",
-              padding:   "14px 14px 16px",
+              borderTop:  "1px solid rgba(28,25,23,0.05)",
+              padding:    "14px 14px 16px",
+              background: "rgba(28,25,23,0.012)",
             }}
           >
-            {/* Classification chip with action */}
+            {/* Classification chip */}
             {showClassification && !isEditing && (
               <div style={{
                 display:      "inline-flex",
@@ -445,7 +444,7 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
                       fontSize:   "12px",
                       fontWeight: 700,
                       padding:    0,
-                      opacity:    0.75,
+                      opacity:    0.7,
                     }}
                   >
                     {status.actionText} →
@@ -457,13 +456,7 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
             {/* Ptkiyot */}
             <div style={{ marginBottom: "8px" }}>
               <SectionToggle
-                label={
-                  isPtkiyotOpen
-                    ? "הסתר שרשור"
-                    : ptkiyotCount > 0
-                      ? `שרשור (${ptkiyotCount})`
-                      : "הוסף פתקית"
-                }
+                label={isPtkiyotOpen ? "הסתר שרשור" : ptkiyotCount > 0 ? `שרשור (${ptkiyotCount})` : "הוסף פתקית"}
                 isOpen={isPtkiyotOpen}
                 onClick={() => setIsPtkiyotOpen((p) => !p)}
               />
@@ -516,7 +509,7 @@ export default function EntryItem({ entry, onDelete, isArchiveView = false, onRe
   );
 }
 
-// ── Helper components ─────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function ActionBtn({ onClick, title, children, accent }) {
   return (
@@ -525,14 +518,15 @@ function ActionBtn({ onClick, title, children, accent }) {
       title={title}
       style={{
         border:       accent ? "none" : "1px solid #E7E5E4",
-        background:   accent ? "#F97316" : "white",
-        color:        accent ? "white"   : "#78716C",
-        borderRadius: "8px",
-        padding:      "5px 12px",
+        background:   accent ? "linear-gradient(135deg,#F97316,#EA580C)" : "white",
+        color:        accent ? "white" : "#78716C",
+        borderRadius: "9px",
+        padding:      "5px 13px",
         cursor:       "pointer",
         fontSize:     "12px",
         fontWeight:   accent ? 700 : 500,
         whiteSpace:   "nowrap",
+        boxShadow:    accent ? "0 2px 6px rgba(249,115,22,0.28)" : "none",
       }}
     >
       {children}
@@ -545,16 +539,15 @@ function SectionToggle({ label, isOpen, onClick }) {
     <button
       onClick={onClick}
       style={{
-        border:       "1px solid #E7E5E4",
+        border:       `1px solid ${isOpen ? "#FED7AA" : "#E7E5E4"}`,
         background:   isOpen ? "#FFF7ED" : "white",
-        borderColor:  isOpen ? "#FED7AA" : "#E7E5E4",
-        borderRadius: "8px",
-        padding:      "5px 12px",
+        borderRadius: "9px",
+        padding:      "5px 13px",
         cursor:       "pointer",
         fontSize:     "12px",
         color:        isOpen ? "#C2410C" : "#78716C",
-        fontWeight:   isOpen ? 600 : 500,
-        transition:   "background 0.12s, color 0.12s",
+        fontWeight:   isOpen ? 700 : 500,
+        transition:   "background 0.14s, color 0.14s, border-color 0.14s",
       }}
     >
       {label}
